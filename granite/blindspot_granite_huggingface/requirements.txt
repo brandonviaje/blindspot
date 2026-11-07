@@ -1,0 +1,5 @@
+huggingface_hub>=0.30,<2
+python-dotenv>=1.0
+sentence-transformers>=3.0
+pandas>=2.0
+numpy>=1.26
