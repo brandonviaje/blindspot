@@ -103,7 +103,7 @@ def _row_to_ticket(row: sqlite3.Row, rank: int) -> dict:
         "granite_baseline_score":  row["granite_baseline_score"],
 
         # ── Placeholder for the ML modeler's final score ──────────────
-        # "predicted_risk_score": row.get("predicted_risk_score"),
+        "predicted_risk_score":    row["predicted_risk_score"],
     }
 
 
@@ -151,10 +151,18 @@ def top_threats():
         limit = DEFAULT_LIMIT
 
     db = get_db()
+    # Rank by the ML model's score once model/train.py --final has written it;
+    # otherwise fall back to the Granite-only heuristic.
+    cols = {r[1] for r in db.execute("PRAGMA table_info(cve_data)").fetchall()}
+    order_col = ("predicted_risk_score" if "predicted_risk_score" in cols
+                 else "granite_baseline_score")
+    score_select = ("predicted_risk_score" if "predicted_risk_score" in cols
+                    else "NULL AS predicted_risk_score")
     try:
         rows = db.execute(
-            """
-            SELECT cve_id,
+            f"""
+            SELECT {score_select},
+                   cve_id,
                    published,
                    description,
                    vendor,
@@ -164,7 +172,7 @@ def top_threats():
                    cites_other_cves,
                    granite_baseline_score
             FROM   cve_data
-            ORDER  BY granite_baseline_score DESC NULLS LAST
+            ORDER  BY {order_col} DESC NULLS LAST
             LIMIT  ?
             """,
             (limit,),

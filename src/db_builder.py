@@ -23,7 +23,8 @@ import pandas as pd
 
 # Resolve paths relative to this script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data", "data")
+REPO_ROOT = os.path.dirname(BASE_DIR)
+DATA_DIR = os.path.join(REPO_ROOT, "data", "data")
 DB_PATH  = os.path.join(BASE_DIR, "blindspot.db")
 
 VULN_CSV       = os.path.join(DATA_DIR, "vulnerabilities.csv")
