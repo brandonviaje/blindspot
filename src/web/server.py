@@ -19,6 +19,7 @@ Live scoring needs `pip install sentence-transformers` (CPU torch is fine); the 
 of the app works without it.
 """
 
+import json
 import os
 import threading
 
@@ -40,6 +41,8 @@ nbrs = pd.read_parquet(os.path.join(DEMO, "neighbors.parquet"))
 kev_meta = pd.read_parquet(os.path.join(DEMO, "kev_meta.parquet"))
 kev_emb = np.load(os.path.join(DEMO, "kev_emb.f16.npy")).astype(np.float32)
 results = pd.read_csv(os.path.join(DEMO, "results.csv"))
+_findings_path = os.path.join(DEMO, "findings.json")  # from src/pipeline/findings.py (optional)
+findings = json.load(open(_findings_path)) if os.path.exists(_findings_path) else {}
 
 _model, _model_lock = None, threading.Lock()
 
@@ -94,11 +97,18 @@ def index():
 
 @app.get("/api/summary")
 def summary():
+    # The last backtest year is the one full test of the final model
+    yr = int(results.year.max())
+    r = results[results.year == yr].set_index("ranking").hits
+    standard = r[[n for n in r.index if not n.startswith("Blindspot")]]
     return jsonify({
         "scored": len(feed),
-        "unreviewed": int((~feed.nist_reviewed).sum()),
-        "top500_unreviewed": int((~feed.nist_reviewed.head(500)).sum()),
         "explained": len(expl),
+        "test_year": yr,
+        "hits": int(r["Blindspot"]),
+        "best_standard_hits": int(standard.max()),
+        "positives": findings.get("header", {}).get("positives"),
+        "warning_days": findings.get("header", {}).get("warning_days_median"),
     })
 
 

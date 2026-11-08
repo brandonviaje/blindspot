@@ -1,7 +1,7 @@
 """
-prepare_demo.py — package everything the Streamlit app needs into blindspot/demo_data/.
+prepare_demo.py — package everything the demo app needs into blindspot/demo_data/.
 
-Run on the machine that has the model cache (after train.py --final and explain.py).
+Run on the machine that has the model cache (after train.py --final, proof.py, findings.py and explain.py).
 Copy (or commit) demo_data/ to the presentation laptops; the app reads only that folder.
 
   feed.parquet           every 2026 scoreboard vulnerability, ranked, with key fields
@@ -10,6 +10,7 @@ Copy (or commit) demo_data/ to the presentation laptops; the app reads only that
   kev_emb.f16.npy        Granite embeddings of already-exploited vulnerabilities (live scoring)
   kev_meta.parquet       cve_id, vendor, product, name, date added, ransomware use for those rows
   results.csv            backtest numbers for the "Does it work?" tab (from proof.py)
+  findings.json          headline numbers for the header, e.g. days of warning (from findings.py)
 
 Run:  python src/web/prepare_demo.py
 """
@@ -61,6 +62,9 @@ def main():
     kev.to_parquet(os.path.join(DEMO, "kev_meta.parquet"), index=False)
 
     shutil.copy(os.path.join(OUT_DIR, "results.csv"), DEMO)  # made by src/pipeline/proof.py
+    findings = os.path.join(OUT_DIR, "findings.json")        # made by src/pipeline/findings.py
+    if os.path.exists(findings):
+        shutil.copy(findings, DEMO)
 
     for f in sorted(os.listdir(DEMO)):
         print(f"{os.path.getsize(os.path.join(DEMO, f)) / 1e6:7.1f} MB  {f}")

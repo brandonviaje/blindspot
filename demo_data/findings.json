@@ -1,0 +1,227 @@
+{
+  "test_years": [
+    2024,
+    2025
+  ],
+  "hits": [
+    {
+      "year": 2024,
+      "ranking": "Blindspot",
+      "top500": 8,
+      "strict": 4,
+      "strict_k": 198,
+      "positives": 27
+    },
+    {
+      "year": 2024,
+      "ranking": "Blindspot, publish-day info only",
+      "top500": 8,
+      "strict": 4,
+      "strict_k": 198,
+      "positives": 27
+    },
+    {
+      "year": 2024,
+      "ranking": "Exploit code first, then EPSS",
+      "top500": 8,
+      "strict": 6,
+      "strict_k": 198,
+      "positives": 27
+    },
+    {
+      "year": 2024,
+      "ranking": "EPSS first",
+      "top500": 4,
+      "strict": 3,
+      "strict_k": 198,
+      "positives": 27
+    },
+    {
+      "year": 2024,
+      "ranking": "Highest CVSS 3 first",
+      "top500": 0,
+      "strict": 0,
+      "strict_k": 198,
+      "positives": 27
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot",
+      "top500": 21,
+      "strict": 18,
+      "strict_k": 243,
+      "positives": 48
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot, publish-day info only",
+      "top500": 14,
+      "strict": 11,
+      "strict_k": 243,
+      "positives": 48
+    },
+    {
+      "year": 2025,
+      "ranking": "Exploit code first, then EPSS",
+      "top500": 17,
+      "strict": 13,
+      "strict_k": 243,
+      "positives": 48
+    },
+    {
+      "year": 2025,
+      "ranking": "EPSS first",
+      "top500": 8,
+      "strict": 8,
+      "strict_k": 243,
+      "positives": 48
+    },
+    {
+      "year": 2025,
+      "ranking": "Highest CVSS 3 first",
+      "top500": 5,
+      "strict": 5,
+      "strict_k": 243,
+      "positives": 48
+    }
+  ],
+  "overlap": [
+    {
+      "year": 2024,
+      "ranking": "Blindspot",
+      "both": 1,
+      "only_ours": 7,
+      "only_baseline": 7,
+      "p": 1.0
+    },
+    {
+      "year": 2024,
+      "ranking": "Blindspot, publish-day info only",
+      "both": 1,
+      "only_ours": 7,
+      "only_baseline": 7,
+      "p": 1.0
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot",
+      "both": 15,
+      "only_ours": 6,
+      "only_baseline": 2,
+      "p": 0.289
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot, publish-day info only",
+      "both": 6,
+      "only_ours": 8,
+      "only_baseline": 11,
+      "p": 0.648
+    }
+  ],
+  "warning": [
+    {
+      "year": 2024,
+      "ranking": "Blindspot",
+      "hits": 8,
+      "median_days": 35,
+      "min_days": 3,
+      "max_days": 223,
+      "median_days_from_publication": 45
+    },
+    {
+      "year": 2024,
+      "ranking": "Blindspot, publish-day info only",
+      "hits": 8,
+      "median_days": 35,
+      "min_days": 3,
+      "max_days": 223,
+      "median_days_from_publication": 45
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot",
+      "hits": 21,
+      "median_days": 30,
+      "min_days": 1,
+      "max_days": 203,
+      "median_days_from_publication": 45
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot, publish-day info only",
+      "hits": 14,
+      "median_days": 38,
+      "min_days": 1,
+      "max_days": 203,
+      "median_days_from_publication": 55
+    }
+  ],
+  "review_order": [
+    {
+      "year": 2024,
+      "ranking": "Blindspot",
+      "in_first_1pct": 0.222,
+      "in_first_5pct": 0.556,
+      "in_first_10pct": 0.778,
+      "median_position": 0.048
+    },
+    {
+      "year": 2024,
+      "ranking": "Blindspot, publish-day info only",
+      "in_first_1pct": 0.222,
+      "in_first_5pct": 0.556,
+      "in_first_10pct": 0.778,
+      "median_position": 0.048
+    },
+    {
+      "year": 2024,
+      "ranking": "Highest CVSS 3 first",
+      "in_first_1pct": 0.0,
+      "in_first_5pct": 0.185,
+      "in_first_10pct": 0.444,
+      "median_position": 0.122
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot",
+      "in_first_1pct": 0.396,
+      "in_first_5pct": 0.708,
+      "in_first_10pct": 0.75,
+      "median_position": 0.024
+    },
+    {
+      "year": 2025,
+      "ranking": "Blindspot, publish-day info only",
+      "in_first_1pct": 0.292,
+      "in_first_5pct": 0.521,
+      "in_first_10pct": 0.646,
+      "median_position": 0.048
+    },
+    {
+      "year": 2025,
+      "ranking": "Highest CVSS 3 first",
+      "in_first_1pct": 0.104,
+      "in_first_5pct": 0.292,
+      "in_first_10pct": 0.312,
+      "median_position": 0.226
+    }
+  ],
+  "in_the_wild_wording": [
+    {
+      "year": 2024,
+      "hits": 8,
+      "with_wording": 0
+    },
+    {
+      "year": 2025,
+      "hits": 21,
+      "with_wording": 2
+    }
+  ],
+  "header": {
+    "year": 2025,
+    "positives": 48,
+    "warning_days_median": 30
+  }
+}

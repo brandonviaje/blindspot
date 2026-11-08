@@ -1,0 +1,37 @@
+== 1. Exploited CVEs caught: top 500 / same strictness as 500 picks in 2026
+                                 top500      strict     
+year                               2024 2025   2024 2025
+ranking                                                 
+Blindspot                             8   21      4   18
+Blindspot, publish-day info only      8   14      4   11
+Exploit code first, then EPSS         8   17      6   13
+EPSS first                            4    8      3    8
+Highest CVSS 3 first                  0    5      0    5
+  strict cut = top 198 in 2024, 243 in 2025   exploited CVEs: 27 in 2024, 48 in 2025
+
+== 2. Which exploited CVEs each ranking caught in its top 500, vs 'Exploit code first, then EPSS'
+  2024 Blindspot                         both  1   only ours  7   only baseline  7   p=1.00
+  2024 Blindspot, publish-day info only  both  1   only ours  7   only baseline  7   p=1.00
+  2025 Blindspot                         both 15   only ours  6   only baseline  2   p=0.29
+  2025 Blindspot, publish-day info only  both  6   only ours  8   only baseline 11   p=0.65
+
+== 3. Warning time for exploited CVEs in the top 500: days until CISA added them to KEV
+  counted from the end of the publish month, when every input to the score exists
+  2024 Blindspot                          8 hits   median 35 days (range 3 to 223)   45 days after publication
+  2024 Blindspot, publish-day info only   8 hits   median 35 days (range 3 to 223)   45 days after publication
+  2025 Blindspot                         21 hits   median 30 days (range 1 to 203)   45 days after publication
+  2025 Blindspot, publish-day info only  14 hits   median 38 days (range 1 to 203)   55 days after publication
+
+== 4. Review order: share of the year's exploited CVEs reached early, working in this order
+  2024 Blindspot                         first 1%:  22%   first 5%:  56%   first 10%:  78%   median exploited CVE at 4.8%
+  2024 Blindspot, publish-day info only  first 1%:  22%   first 5%:  56%   first 10%:  78%   median exploited CVE at 4.8%
+  2024 Highest CVSS 3 first              first 1%:   0%   first 5%:  18%   first 10%:  44%   median exploited CVE at 12.2%
+  2025 Blindspot                         first 1%:  40%   first 5%:  71%   first 10%:  75%   median exploited CVE at 2.4%
+  2025 Blindspot, publish-day info only  first 1%:  29%   first 5%:  52%   first 10%:  65%   median exploited CVE at 4.8%
+  2025 Highest CVSS 3 first              first 1%:  10%   first 5%:  29%   first 10%:  31%   median exploited CVE at 22.6%
+
+== 5. Descriptions are today's text. Could later edits ('exploited in the wild') explain the hits?
+  2024: 0 of Blindspot's 8 hits mention it
+  2025: 2 of Blindspot's 21 hits mention it
+
+wrote output/findings.json

@@ -1,11 +1,11 @@
-# Raw data (~800 MB)
 data/
 
 # Generated artifacts
 *.db
-model/cache/
-model/output/risk_feed.csv
+cache/
+output/risk_feed.csv
 *.parquet
+!demo_data/*.parquet
 
 # Python
 __pycache__/
@@ -13,3 +13,6 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+
+# Secret loot
+.env
