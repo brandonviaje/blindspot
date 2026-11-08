@@ -1,0 +1,6 @@
+# pip install -r src/web/requirements.txt
+flask>=3.0
+pandas>=2.0
+pyarrow>=14
+numpy
+sentence-transformers

@@ -1,38 +1,42 @@
 """
-train.py — Blindspot exploit-likelihood model.
+The real model: combines every feature and predicts which CVEs get exploited.
 
-  python model/train.py            backtests + feature-removal table + leakage audit
-  python model/train.py --final    also trains on 2022-2025 and scores the 2026 scoreboard:
-                                   writes top500.csv, output/risk_feed.csv, and (if
-                                   src/blindspot.db exists) cve_data.predicted_risk_score
+  python src/pipeline/train.py           test it + print the results tables
+  python src/pipeline/train.py --final   also train on 2022-2025, score 2026 and write
+                                         top500.csv, output/risk_feed.csv, output/feature_importance.csv
 
-Evaluation
-  forward   train on cohorts before Y, test on Y (honest: what we could have done then)
-  loyo      leave-one-year-out over 2022-2025 (more positives -> steadier comparison)
-Metrics
-  hits@500  positives in the top 500 (the judges' metric)
-  hits@top0.69%  positives in the top 500/72,670 of the cohort — the 2026 scoreboard is
-                 2-4x larger than past cohorts, so this matches its selectivity
+How it's tested (always on a year it never saw):
+  forward   train on earlier years only, test on the next one (most honest)
+  loyo      hold out each year in turn, train on the rest (more data → steadier numbers)
+
+What's counted:
+  hits@500       exploited CVEs in the top 500 (what the judges count)
+  hits@top0.69%  same, but the top 0.69% of the year: 2026 is 2-4x bigger than past years,
+                 so 500 picks in 2026 is a stricter cut than 500 in 2025
+
+Save the results:  python src/pipeline/train.py --final > output/train_report.log
 """
 
 import argparse
 import os
-import sqlite3
+import sys
 
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
-from common import (CACHE_DIR, DATASET_PATH, DB_PATH, OUT_DIR, REPO_ROOT,
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # lets us import common.py
+from common import (CACHE_DIR, DATASET_PATH, OUT_DIR, REPO_ROOT,
                     SCORE_YEAR, TRAIN_YEARS, hits_at)
 
-SB_FRAC = 500 / 72670
+SB_FRAC = 500 / 72670  # 2026: 500 picks out of 72,670
 
 KW = ["kw_unauth", "kw_rce", "kw_auth_bypass", "kw_privesc", "kw_in_wild", "kw_memory",
       "kw_deserial", "kw_path_trav", "kw_file_upload", "kw_sqli", "kw_xss", "kw_csrf",
       "kw_dos", "kw_edge", "kw_mail", "kw_mgmt", "kw_browser_os", "kw_wordpress",
       "kw_mobile_app", "kw_requires_auth", "kw_local"]
 
+# Features in named groups, so we can switch a group off and see what it was worth
 FEATURE_GROUPS = {
     "horizon":     ["months_to_cutoff"],
     "assigner":    ["assigner_kev_all", "assigner_kev_12m", "assigner_cves_12m",
@@ -41,33 +45,47 @@ FEATURE_GROUPS = {
     "citations":   ["cites_cve", "cites_kev_cve"],
     "keywords":    KW + ["desc_len"],
     "text_model":  ["text_score"],
+    # From granite_neighbors.py. Other g_* columns were tried and made the strict cut worse.
+    "granite":     ["g_knn10_kev", "g_kev_top5_sim"],
     "cvss4_cna":   ["cvss4_score", "cvss4_av_network", "cvss4_pr_none", "cvss4_ui_none"],
     "signals":     ["epss", "epss_pct_cohort", "exploitdb", "metasploit", "nuclei",
                     "poc_github", "any_exploit_code"],
-    # never used in the submitted model — leakage audit only
+    # Cheating columns: NEVER in the real model, only to show how much they'd inflate results
     "LEAKY":       ["leak_nvd_reviewed", "leak_cvss3_missing", "leak_cvss3_by_nist",
                     "leak_cwe_missing", "n_references", "n_affected_cpes", "cvss3_score"],
 }
 SAFE_GROUPS = [g for g in FEATURE_GROUPS if g != "LEAKY"]
 
+# LightGBM settings: small trees + lots of regularization, since we only have ~130 exploited examples
 PARAMS = dict(objective="binary", learning_rate=0.03, num_leaves=7, min_child_samples=40,
               feature_fraction=0.7, bagging_fraction=0.8, bagging_freq=1, lambda_l2=10.0,
               scale_pos_weight=10.0, verbose=-1, n_jobs=8)
 N_ROUNDS = 300
-SEEDS = [0, 1, 2, 3, 4]
+SEEDS = [0, 1, 2, 3, 4]  # train 5 times and average, so results don't depend on luck
 
 
 def features(groups):
+    """Group names → list of column names."""
     return [c for g in groups for c in FEATURE_GROUPS[g]]
 
 
 def load():
+    """The big table + text scores + Granite features, joined together."""
     df = pd.read_parquet(DATASET_PATH)
     ts = pd.read_parquet(os.path.join(CACHE_DIR, "text_scores.parquet"))
-    return df.merge(ts, on=["cve_id", "cohort_year"], how="left")
+    df = df.merge(ts, on=["cve_id", "cohort_year"], how="left")
+    gpath = os.path.join(CACHE_DIR, "granite_features.parquet")
+    if os.path.exists(gpath):
+        df = df.merge(pd.read_parquet(gpath), on=["cve_id", "cohort_year"], how="left")
+    else:
+        print("note: no granite_features.parquet — run embed_granite.py + granite_neighbors.py")
+        FEATURE_GROUPS.pop("granite")
+        SAFE_GROUPS.remove("granite")
+    return df
 
 
 def fit_predict(train, test, cols):
+    """Train on one set, score another (averaged over the 5 seeds)."""
     pred = np.zeros(len(test))
     for s in SEEDS:
         m = lgb.train({**PARAMS, "seed": s}, lgb.Dataset(train[cols], train.label),
@@ -77,18 +95,20 @@ def fit_predict(train, test, cols):
 
 
 def fit_final(train, cols):
+    """Train the 5 final models on all training years."""
     return [lgb.train({**PARAMS, "seed": s}, lgb.Dataset(train[cols], train.label),
                       num_boost_round=N_ROUNDS) for s in SEEDS]
 
 
 def score(test, pred):
+    """Count hits in the top 500 and in the top 0.69%."""
     t = test.assign(score=pred)
     k = max(1, round(len(t) * SB_FRAC))
     return hits_at(t, "score", 500), hits_at(t, "score", k)
 
 
 def evaluate(df, cols, mode):
-    """Returns {year: (hits@500, hits@frac)}."""
+    """Run a forward or loyo test → {year: (hits@500, hits@top0.69%)}."""
     lab = df[df.cohort_year.isin(TRAIN_YEARS)]
     res = {}
     years = [2024, 2025] if mode == "forward" else TRAIN_YEARS
@@ -108,6 +128,7 @@ def total(res):
 
 
 def report(df):
+    """Print every results table: full model, feature removal, publish-day only, leakage audit."""
     lab = df[df.cohort_year.isin(TRAIN_YEARS)]
     print("positives per cohort:", lab.groupby("cohort_year").label.sum().astype(int).to_dict())
     print("format per year = hits@500 / hits@top0.69%\n")
@@ -137,6 +158,7 @@ def report(df):
 
 
 def final(df):
+    """Train on 2022-2025, score 2026, write top500.csv + the risk feed."""
     cols = features(SAFE_GROUPS)
     train = df[df.cohort_year.isin(TRAIN_YEARS)]
     test = df[df.cohort_year == SCORE_YEAR].copy()
@@ -164,17 +186,6 @@ def final(df):
     print(test[["rank", "cve_id", "predicted_risk_score", "desc_vendor", "epss",
                 "any_exploit_code"]].head(15).to_string(index=False))
 
-    if os.path.isfile(DB_PATH):
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        existing = {r[1] for r in cur.execute("PRAGMA table_info(cve_data)")}
-        if "predicted_risk_score" not in existing:
-            cur.execute("ALTER TABLE cve_data ADD COLUMN predicted_risk_score REAL")
-        cur.executemany("UPDATE cve_data SET predicted_risk_score=? WHERE cve_id=?",
-                        list(zip(test.predicted_risk_score.astype(float), test.cve_id)))
-        conn.commit()
-        conn.close()
-        print(f"  wrote predicted_risk_score to {DB_PATH}")
 
 
 def main():

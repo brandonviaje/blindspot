@@ -1,27 +1,31 @@
 """
-build_dataset.py — one row per vulnerability, as known at the end of its snapshot month.
+Builds the big table: one row per vulnerability, with only what was known by the end of its publish month (doesnt peek at the future).
 
-Cohorts (each mirrors scoreboard_2026.csv):
-  2022-2025  published Jan-Sep, snapshot = publish month,
-             dropped if already on KEV by the end of the snapshot month,
-             label = added to KEV after the snapshot and by Nov 4 of that year.
-  2026       exactly the rows of scoreboard_2026.csv (label unknown).
+Which rows:
+  2022-2025  published Jan-Sep; answer = added to KEV by Nov 4 that year  (training)
+  2026       exactly the 72,670 scoreboard CVEs; answer unknown          (what we predict)
+  Bugs already on KEV in their publish month are dropped, same as the scoreboard does.
 
-Feature groups (see FEATURE_GROUPS in train.py):
-  publish-day safe : assigner/vendor/product KEV history, description keywords,
-                     cited CVEs, CNA-supplied CVSS v4, months to cutoff
-  signals          : EPSS + public exploit-code flags at the snapshot
-  leaky (audit only): nvd_status, n_references, n_affected_cpes, CVSS v3 (NIST)
+What it adds (train.py groups these):
+  history   how often this assigner / vendor / product got exploited before
+  text      keywords ("unauthenticated", "VPN", ...), mentions of other exploited CVEs
+  signals   EPSS + public exploit code at that month
+  leaky     NIST review columns, kept ONLY for the leakage audit, never in the model
 
-Run:  python model/build_dataset.py
+Saves cache/dataset.parquet. Takes ~1.5 min.
+
+Run:  python src/pipeline/build_dataset.py
 """
 
+import os
 import re
+import sys
 import time
 
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # lets us import common.py
 from common import (DATASET_PATH, KEV_END, SCORE_YEAR, TRAIN_YEARS, cutoff_for,
                     load_kev, load_vulns, path)
 
@@ -32,9 +36,7 @@ def log(msg):
     print(f"[{time.time() - t0:6.1f}s] {msg}", flush=True)
 
 
-# ---------------------------------------------------------------------------
-# Cohorts
-# ---------------------------------------------------------------------------
+# --- Which CVEs go in, and their answers ---
 
 def build_cohorts(v: pd.DataFrame, kev: pd.DataFrame) -> pd.DataFrame:
     kev_date = kev.set_index("cve_id")["date_added"]
@@ -59,7 +61,7 @@ def build_cohorts(v: pd.DataFrame, kev: pd.DataFrame) -> pd.DataFrame:
     df["cutoff"] = df.cohort_year.map(cutoff_for)
     df["kev_date"] = df.cve_id.map(kev_date)
 
-    # Zero-day filter: already on KEV by the end of the snapshot month.
+    # drop bugs already on KEV by the end of their month (the scoreboard does the same)
     zero_day = df.kev_date.notna() & (df.kev_date <= df.snapshot_end)
     log(f"dropping {int(zero_day[df.cohort_year < SCORE_YEAR].sum())} already-on-KEV rows "
         f"from training cohorts")
@@ -69,15 +71,13 @@ def build_cohorts(v: pd.DataFrame, kev: pd.DataFrame) -> pd.DataFrame:
         df.cohort_year == SCORE_YEAR, np.nan,
         (df.kev_date.notna() & (df.kev_date <= df.cutoff)).astype(float))
     df["months_to_cutoff"] = (df.cutoff - df.snapshot_end).dt.days / 30.44
-    # History features are computed as of this date (KEV data ends 2025-12-31).
+
+    # "As of" date for history features (our KEV file stops at 2025-12-31)
     df["hist_date"] = df.snapshot_end.clip(upper=KEV_END)
     return df.reset_index(drop=True)
 
 
-# ---------------------------------------------------------------------------
-# Exploit signals (EPSS + public exploit code) at the snapshot
-# ---------------------------------------------------------------------------
-
+# --- EPSS + public exploit code, as of that month ---
 def add_signals(df: pd.DataFrame) -> pd.DataFrame:
     sig_cols = ["epss", "exploitdb", "metasploit", "nuclei", "poc_github"]
     frames = []
@@ -96,8 +96,8 @@ def add_signals(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[has_file, c] = df.loc[has_file, c + "_s"]
         df = df.drop(columns=c + "_s")
     flags = ["exploitdb", "metasploit", "nuclei", "poc_github"]
-    # Same convention as the scoreboard: no data -> blank EPSS and 0 flags.
-    # Years without any signals file (2022-23) stay NaN so the model can tell.
+    # No data → blank EPSS and 0 flags, like the scoreboard.
+    # 2022-23 have no signals file at all, so they stay blank and the model knows.
     with_signals = df.cohort_year >= 2024
     df.loc[with_signals, flags] = df.loc[with_signals, flags].fillna(0)
     df["signals_available"] = with_signals.astype(int)
@@ -107,13 +107,10 @@ def add_signals(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ---------------------------------------------------------------------------
-# History counts (time-safe): events of the same key up to hist_date
-# ---------------------------------------------------------------------------
-
+# --- Track record: how often this assigner / vendor / product got exploited before ---
 def count_prior(row_keys, row_dates, ev_keys, ev_dates, window_days=None):
-    """For each row, count events with the same key and date <= row date
-    (and > row date - window_days, if given)."""
+    """For each row: how many events with the same key happened on/before its date
+    (optionally only within the last window_days)."""
     out = np.zeros(len(row_keys), dtype=np.int32)
     ev = pd.DataFrame({"k": ev_keys, "d": ev_dates}).dropna()
     groups = {k: np.sort(g.d.values.astype("datetime64[D]"))
@@ -134,6 +131,7 @@ def count_prior(row_keys, row_dates, ev_keys, ev_dates, window_days=None):
 
 
 def build_vocab_regex(names):
+    """One big regex that finds any of these names as a whole word."""
     names = sorted({n for n in names if n}, key=len, reverse=True)
     pat = r"(?<![\w-])(" + "|".join(re.escape(n) for n in names) + r")(?![\w-])"
     return re.compile(pat, re.IGNORECASE)
@@ -142,14 +140,14 @@ def build_vocab_regex(names):
 def add_history(df: pd.DataFrame, v: pd.DataFrame, kev: pd.DataFrame) -> pd.DataFrame:
     kev = kev.merge(v[["cve_id", "assigner"]], on="cve_id", how="left")
 
-    # -- assigner (who issued the CVE; known on publish day)
+    # Assigner = who filed the CVE (known on day one)
     log("assigner history")
     df["assigner_kev_all"] = count_prior(df.assigner, df.hist_date, kev.assigner, kev.date_added)
     df["assigner_kev_12m"] = count_prior(df.assigner, df.hist_date, kev.assigner, kev.date_added, 365)
     df["assigner_cves_12m"] = count_prior(df.assigner, df.hist_date, v.assigner, v.published, 365)
     df["assigner_kev_rate_12m"] = df.assigner_kev_12m / (df.assigner_cves_12m + 1)
 
-    # -- vendor / product named in the description, matched to CISA's KEV names
+    # Vendor / product: look for KEV vendor names inside the description
     log("vendor / product matching")
     vendor_names = kev.vendor.str.strip().str.lower()
     vendor_re = build_vocab_regex(vendor_names.unique())
@@ -170,7 +168,7 @@ def add_history(df: pd.DataFrame, v: pd.DataFrame, kev: pd.DataFrame) -> pd.Data
     df["product_kev_all"] = count_prior(df.desc_product.fillna("~"), df.hist_date, kev_product, kev.date_added)
     df["product_kev_12m"] = count_prior(df.desc_product.fillna("~"), df.hist_date, kev_product, kev.date_added, 365)
 
-    # -- cited CVEs (e.g. "incomplete fix for CVE-2024-1234")
+    # Does it mention another CVE ("incomplete fix for CVE-2024-1234")? Was that one exploited?
     log("cited CVEs")
     kev_dates = kev.set_index("cve_id")["date_added"]
     cve_re = re.compile(r"CVE-\d{4}-\d{4,7}", re.IGNORECASE)
@@ -184,10 +182,7 @@ def add_history(df: pd.DataFrame, v: pd.DataFrame, kev: pd.DataFrame) -> pd.Data
     return df
 
 
-# ---------------------------------------------------------------------------
-# Description keywords + CNA-supplied CVSS v4
-# ---------------------------------------------------------------------------
-
+# --- Keywords in the description + the CVSS v4 score the CVE's submitter gave ---
 KEYWORDS = {
     "kw_unauth": r"unauthenticated|without authentication|no authentication|pre-?auth|"
                  r"does not require authentication|remote,? unauthenticated",
@@ -221,7 +216,6 @@ KEYWORDS = {
     "kw_local": r"local attacker|locally|physical access",
 }
 
-
 def add_text_features(df: pd.DataFrame) -> pd.DataFrame:
     log("keyword flags")
     text = df.description.str.lower()
@@ -234,13 +228,12 @@ def add_text_features(df: pd.DataFrame) -> pd.DataFrame:
     df["cvss4_pr_none"] = np.where(vec == "", np.nan, vec.str.contains("PR:N").astype(float))
     df["cvss4_ui_none"] = np.where(vec == "", np.nan, vec.str.contains("UI:N").astype(float))
 
-    # Leaky columns — kept ONLY for the leakage audit, never in the default model.
+    # Leaky NIST columns: ONLY for the leakage audit, never in the real model
     df["leak_nvd_reviewed"] = df.nvd_status.isin(["Analyzed", "Modified"]).astype(int)
     df["leak_cvss3_missing"] = df.cvss3_score.isna().astype(int)
     df["leak_cvss3_by_nist"] = (df.cvss3_source == "nvd@nist.gov").astype(int)
     df["leak_cwe_missing"] = (df.cwe_ids.isna() | df.cwe_ids.fillna("").str.startswith("NVD-CWE")).astype(int)
     return df
-
 
 def main():
     log("loading")

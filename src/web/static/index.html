@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blindspot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f8; --surface: #fff; --ink: #142033; --muted: #56627a; --line: #d9dee7;
+  --accent: #1f5fd1; --accent-soft: #e4ecfb; --crit: #b4232f; --crit-soft: #fbe4e6;
+  --warn: #a8540a; --warn-soft: #fcefdf; --ok: #1d7a4a; --ok-soft: #e1f3e8; --bar-base: #b9c2d3;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1520; --surface: #161e2c; --ink: #e5eaf3; --muted: #9aa6bb; --line: #2a3446;
+    --accent: #78a6ff; --accent-soft: #1b2a47; --crit: #ff7b85; --crit-soft: #3b1a1e;
+    --warn: #f0a85a; --warn-soft: #3a2a17; --ok: #5fcf93; --ok-soft: #15301f; --bar-base: #45506a;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 64px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; }
+h1 { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 600; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.tagline { color: var(--muted); font-family: var(--display); font-size: 1.1rem; }
+.kpis { display: flex; gap: 22px; flex-wrap: wrap; }
+.kpi { display: grid; }
+.kpi b { font-family: var(--display); font-size: 1.6rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.kpi span { font-size: 12.5px; color: var(--muted); }
+nav { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 22px; overflow-x: auto; }
+nav button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font: 500 14.5px var(--body); color: var(--muted); cursor: pointer; white-space: nowrap; }
+nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+nav button:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section[hidden] { display: none; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
+.controls { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: end; margin-bottom: 16px; }
+label.lbl { display: block; font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+input[type=text], textarea { width: 100%; font: 15px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; }
+textarea { min-height: 120px; resize: vertical; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { font: 12.5px var(--mono); padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.chip.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.btn { font: 600 14px var(--body); background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 9px 16px; cursor: pointer; }
+.btn.ghost { background: none; color: var(--accent); border: 1px solid var(--accent); }
+.summary { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: baseline; margin: 6px 0 14px; }
+.summary .big { font-family: var(--display); font-size: 1.9rem; font-weight: 700; line-height: 1; }
+.meter { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; width: 220px; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.list { display: grid; gap: 10px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; cursor: pointer; }
+.item:hover { border-color: var(--accent); }
+.item .rk { font-family: var(--display); font-size: 1.3rem; font-weight: 700; color: var(--muted); }
+.item .top { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.item .id { font-family: var(--mono); font-weight: 500; }
+.item .why { margin-top: 4px; }
+.evidence { font: 13px var(--mono); color: var(--accent); margin-top: 4px; }
+.item .desc { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+.score { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.score small { display: block; color: var(--muted); font-size: 11px; }
+.tag { font: 11.5px var(--mono); padding: 1px 7px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+.tag.crit { background: var(--crit-soft); color: var(--crit); }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.ok { background: var(--ok-soft); color: var(--ok); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11.5px var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+td.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--accent-soft); }
+.tblwrap { overflow-x: auto; }
+.pager { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(760px, 94vw); background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgb(10 15 25 / .55); }
+.dlg { padding: 20px 22px; display: grid; gap: 14px; max-height: 86vh; overflow: auto; }
+.dlg .close { justify-self: end; }
+.nb { display: grid; grid-template-columns: 120px 64px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+.chart text { font-family: var(--body); fill: var(--muted); font-size: 12px; }
+.chart .val { fill: var(--ink); font-family: var(--mono); font-size: 12px; }
+.chart .hl { fill: var(--accent); }
+.chart .base { fill: var(--bar-base); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.note { font-size: 13.5px; color: var(--muted); }
+@media (max-width: 720px) {
+  .controls, .grid2 { grid-template-columns: 1fr; }
+  .item { grid-template-columns: 1fr auto; }
+  .item .rk { display: none; }
+  .nb { grid-template-columns: 1fr 60px; }
+  .nb .nd { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Blindspot</h1>
+      <div class="tagline">Triage for the vulnerabilities NIST hasn't reviewed</div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="plan">My patch list</button>
+    <button role="tab" aria-selected="false" data-tab="feed">Risk feed</button>
+    <button role="tab" aria-selected="false" data-tab="score">Score a new CVE</button>
+    <button role="tab" aria-selected="false" data-tab="proof">Does it work?</button>
+  </nav>
+
+  <!-- Patch list -->
+  <section id="tab-plan">
+    <div class="controls">
+      <div>
+        <label class="lbl" for="q">What software do you run? (comma separated)</label>
+        <input type="text" id="q" value="fortinet, ivanti, microsoft exchange, wordpress" autocomplete="off">
+        <div class="chips" id="vendorChips"></div>
+      </div>
+      <div>
+        <label class="lbl" for="perWeek">Fixes per week: <b id="perWeekVal" class="mono">10</b></label>
+        <input type="range" id="perWeek" min="1" max="50" value="10">
+      </div>
+    </div>
+    <div class="summary" id="planSummary"></div>
+    <div class="list" id="planList"></div>
+  </section>
+
+  <!-- Feed -->
+  <section id="tab-feed" hidden>
+    <div class="controls">
+      <div>
+        <label class="lbl" for="feedQ">Filter by vendor, product or word</label>
+        <input type="text" id="feedQ" placeholder="e.g. vpn, citrix, sql injection" autocomplete="off">
+      </div>
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+        <label><input type="checkbox" id="unrev"> Not yet reviewed by NIST</label>
+        <a class="btn ghost" href="/api/feed.csv" download>Download CSV</a>
+      </div>
+    </div>
+    <p class="note" id="feedCount"></p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Rank</th><th>CVE</th><th>Vendor</th><th>Published</th><th>NIST</th><th style="text-align:right">Risk</th><th style="text-align:right">EPSS</th></tr></thead>
+      <tbody id="feedBody"></tbody>
+    </table></div>
+    <div class="pager"><button class="btn ghost" id="prev">Previous</button><span id="pageInfo" class="muted mono"></span><button class="btn ghost" id="next">Next</button></div>
+  </section>
+
+  <!-- Score -->
+  <section id="tab-score" hidden>
+    <div class="grid2">
+      <div class="panel" style="display:grid; gap:10px; align-content:start">
+        <h2>Paste a vulnerability published today</h2>
+        <p class="note">IBM Granite reads the description on this laptop and finds the past vulnerabilities attackers already used that it most resembles. No NIST data needed.</p>
+        <textarea id="newDesc">An authentication bypass in the web management interface of Acme SecureGate VPN appliances allows a remote unauthenticated attacker to gain administrator access and execute arbitrary commands.</textarea>
+        <div><button class="btn" id="scoreBtn">Score with Granite</button></div>
+      </div>
+      <div id="scoreOut" class="panel"><div class="empty">Results show here.</div></div>
+    </div>
+  </section>
+
+  <!-- Proof -->
+  <section id="tab-proof" hidden>
+    <div class="panel" style="display:grid; gap:12px">
+      <h2>Exploited vulnerabilities caught in the top 500</h2>
+      <p class="note">Each model was trained only on earlier years, then tested on a year it had never seen. Counts are vulnerabilities later added to CISA's Known Exploited list.</p>
+      <div id="chart"></div>
+      <p class="note">"Publish-day info only" uses no EPSS or exploit-code data, just what exists the day a CVE appears. That is the situation for every vulnerability NIST hasn't reviewed.</p>
+    </div>
+  </section>
+</div>
+
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = x => (x == null ? "–" : (x * 100).toFixed(x < 0.01 ? 2 : 1) + "%");
+const api = async (u, o) => { const r = await fetch(u, o); const j = await r.json(); if (!r.ok) throw new Error(j.error || r.statusText); return j; };
+const debounce = (f, ms = 250) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
+
+// tabs
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("section").forEach(s => s.hidden = s.id !== "tab-" + b.dataset.tab);
+  if (b.dataset.tab === "feed" && !feedLoaded) loadFeed();
+  if (b.dataset.tab === "proof") drawChart();
+});
+
+function tags(it) {
+  const t = [];
+  if (!it.nist_reviewed) t.push('<span class="tag warn">Not reviewed by NIST</span>');
+  if (it.exploit_code) t.push('<span class="tag crit">Exploit code public</span>');
+  if (it.no_login) t.push('<span class="tag">No login needed</span>');
+  if (it.code_exec) t.push('<span class="tag">Code execution</span>');
+  return t.join(" ");
+}
+
+// header
+api("/api/summary").then(s => {
+  $("#kpis").innerHTML = `
+    <div class="kpi"><b>${s.scored.toLocaleString()}</b><span>2026 vulnerabilities scored</span></div>
+    <div class="kpi"><b>${s.unreviewed.toLocaleString()}</b><span>not yet reviewed by NIST</span></div>
+    <div class="kpi"><b>${s.top500_unreviewed}</b><span>of our top 500 unreviewed</span></div>`;
+});
+
+// patch plan
+api("/api/vendors").then(vs => {
+  $("#vendorChips").innerHTML = vs.slice(0, 18).map(v => `<button class="chip" data-v="${esc(v)}">${esc(v)}</button>`).join("");
+  syncChips();
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    let terms = $("#q").value.split(",").map(s => s.trim()).filter(Boolean);
+    const v = c.dataset.v;
+    terms = terms.map(t => t.toLowerCase()).includes(v) ? terms.filter(t => t.toLowerCase() !== v) : [...terms, v];
+    $("#q").value = terms.join(", "); syncChips(); loadPlan();
+  });
+});
+function syncChips() {
+  const terms = $("#q").value.toLowerCase().split(",").map(s => s.trim());
+  document.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", terms.includes(c.dataset.v)));
+}
+async function loadPlan() {
+  const q = $("#q").value, n = $("#perWeek").value;
+  $("#perWeekVal").textContent = n;
+  const d = await api(`/api/patch-plan?q=${encodeURIComponent(q)}&per_week=${n}`);
+  if (!d.matching) {
+    $("#planSummary").innerHTML = "";
+    $("#planList").innerHTML = `<div class="empty">No 2026 vulnerabilities mention that software. Try a vendor name like "cisco" or "wordpress".</div>`;
+    return;
+  }
+  $("#planSummary").innerHTML = `
+    <div><div class="big">${d.items.length}</div><span class="muted">fixes this week, of ${d.matching.toLocaleString()} that affect you</span></div>
+    <div><div class="big">${pct(d.covered)}</div><span class="muted">of your total risk score covered</span></div>
+    <div class="meter" title="share of risk covered"><i style="width:${(d.covered * 100).toFixed(1)}%"></i></div>`;
+  $("#planList").innerHTML = d.items.map((it, i) => `
+    <div class="item" data-id="${it.cve_id}" tabindex="0">
+      <div class="rk">${i + 1}</div>
+      <div>
+        <div class="top"><span class="id">${it.cve_id}</span>${it.vendor ? `<span class="muted">${esc(it.vendor)}${it.product ? " · " + esc(it.product) : ""}</span>` : ""} ${tags(it)}</div>
+        ${it.why ? `<div class="why">${esc(it.why)} <span class="tag" title="Written by IBM Granite 4.0 from the evidence below">Granite</span></div>` : ""}
+        ${it.evidence ? `<div class="evidence">${esc(it.evidence)}</div>` : ""}
+        <div class="desc">${esc(it.description)}${it.description.length >= 260 ? "…" : ""}</div>
+      </div>
+      <div class="score">${it.score.toFixed(2)}<small>risk · #${it.rank.toLocaleString()} overall</small></div>
+    </div>`).join("");
+  bindOpen("#planList .item");
+}
+$("#q").addEventListener("input", debounce(() => { syncChips(); loadPlan(); }));
+$("#perWeek").addEventListener("input", debounce(loadPlan, 80));
+loadPlan();
+
+// feed
+let feedLoaded = false, offset = 0; const LIMIT = 50;
+async function loadFeed() {
+  feedLoaded = true;
+  const q = $("#feedQ").value, u = $("#unrev").checked ? 1 : 0;
+  const d = await api(`/api/feed?limit=${LIMIT}&offset=${offset}&unreviewed=${u}${q ? "&q=" + encodeURIComponent(q) : ""}`);
+  $("#feedCount").textContent = `${d.total.toLocaleString()} vulnerabilities, highest risk first.`;
+  $("#feedBody").innerHTML = d.items.map(it => `
+    <tr data-id="${it.cve_id}" tabindex="0">
+      <td class="n">${it.rank.toLocaleString()}</td><td class="mono">${it.cve_id}</td>
+      <td>${esc(it.vendor || "–")}</td><td class="mono">${it.published}</td>
+      <td>${it.nist_reviewed ? '<span class="tag ok">Reviewed</span>' : '<span class="tag warn">Not yet</span>'}</td>
+      <td class="n">${it.score.toFixed(3)}</td><td class="n">${pct(it.epss)}</td>
+    </tr>`).join("");
+  $("#pageInfo").textContent = `${(offset + 1).toLocaleString()}–${Math.min(offset + LIMIT, d.total).toLocaleString()}`;
+  $("#prev").disabled = offset === 0; $("#next").disabled = offset + LIMIT >= d.total;
+  bindOpen("#feedBody tr");
+}
+$("#feedQ").addEventListener("input", debounce(() => { offset = 0; loadFeed(); }));
+$("#unrev").onchange = () => { offset = 0; loadFeed(); };
+$("#prev").onclick = () => { offset = Math.max(0, offset - LIMIT); loadFeed(); };
+$("#next").onclick = () => { offset += LIMIT; loadFeed(); };
+
+// detail dialog
+function bindOpen(sel) {
+  document.querySelectorAll(sel).forEach(el => {
+    el.onclick = () => openCve(el.dataset.id);
+    el.onkeydown = e => { if (e.key === "Enter") openCve(el.dataset.id); };
+  });
+}
+async function openCve(id) {
+  const d = await api(`/api/cve/${id}`);
+  const nb = (d.neighbors || []).map(n => `
+    <div class="nb">
+      <div class="mono">${n.cve_id}<br>${n.exploited ? `<span class="tag crit">Exploited${n.days_to_kev != null ? " · " + Math.max(0, n.days_to_kev) + "d" : ""}</span>` : '<span class="tag">Not exploited</span>'}</div>
+      <div class="mono">${(n.similarity * 100).toFixed(0)}%<br><span class="muted" style="font-size:11px">similar</span></div>
+      <div class="nd muted">${esc(n.description)}</div>
+    </div>`).join("");
+  $("#dlgBody").innerHTML = `
+    <button class="btn ghost close" onclick="dlg.close()">Close</button>
+    <div><div class="mono muted">Rank #${d.rank.toLocaleString()} of 72,670 · published ${d.published}</div><h2 class="mono">${d.cve_id}</h2></div>
+    <div>${tags(d)}</div>
+    ${d.why || d.evidence ? `<div class="panel"><b>Why it's high risk</b>${d.why ? `<br>${esc(d.why)} <span class="tag">Granite</span>` : ""}${d.evidence ? `<div class="evidence">Evidence: ${esc(d.evidence)}</div>` : ""}</div>` : ""}
+    <div><b>Description</b><p class="muted" style="margin:4px 0 0">${esc(d.description)}</p></div>
+    ${nb ? `<div><b>10 most similar past vulnerabilities (IBM Granite embeddings)</b>${nb}</div>` : `<p class="note">Similar-vulnerability evidence is precomputed for the top ${100} only.</p>`}`;
+  dlg.showModal();
+}
+
+// live scoring
+$("#scoreBtn").onclick = async () => {
+  const out = $("#scoreOut"), btn = $("#scoreBtn");
+  btn.disabled = true; btn.textContent = "Granite is reading…";
+  out.innerHTML = '<div class="empty">Embedding with IBM Granite on this machine. The first run loads the model, which takes a few seconds.</div>';
+  try {
+    const d = await api("/api/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ description: $("#newDesc").value }) });
+    const p = d.percentile_2026;
+    const level = p >= 0.95 ? ["crit", "Very close to known attacks"] : p >= 0.8 ? ["warn", "Close to known attacks"] : ["ok", "Not especially close to known attacks"];
+    out.innerHTML = `
+      <div style="display:grid; gap:10px">
+        <div><span class="tag ${level[0]}">${level[1]}</span></div>
+        <div><span class="big" style="font-family:var(--display);font-size:1.9rem;font-weight:700">${(p * 100).toFixed(0)}th</span> <span class="muted">percentile: closer to already-exploited vulnerabilities than ${(p * 100).toFixed(0)}% of 2026 CVEs</span></div>
+        <b>Closest already-exploited vulnerabilities</b>
+        ${d.matches.map(m => `
+          <div class="nb" style="grid-template-columns:130px 1fr 56px">
+            <div class="mono">${m.cve_id}</div>
+            <div>${esc(m.vendor)} ${esc(m.product)}${m.ransomware ? ' <span class="tag crit">Ransomware</span>' : ""}<br><span class="muted" style="font-size:12.5px">${esc(m.name || "")} · on KEV ${m.date_added}</span></div>
+            <div class="mono" style="text-align:right">${(m.similarity * 100).toFixed(0)}%</div>
+          </div>`).join("")}
+        <p class="note">Similarity alone, not the full Blindspot score. The full score also uses assigner and vendor history, exploit code and EPSS.</p>
+      </div>`;
+  } catch (e) {
+    out.innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  } finally { btn.disabled = false; btn.textContent = "Score with Granite"; }
+};
+
+// chart
+let drawn = false;
+async function drawChart() {
+  if (drawn) return; drawn = true;
+  const rows = await api("/api/results");
+  const order = ["Highest CVSS 3 first", "EPSS first", "Exploit code first, then EPSS", "Blindspot, publish-day info only", "Blindspot"];
+  const years = [...new Set(rows.map(r => r.year))];
+  const max = Math.max(...rows.map(r => r.hits));
+  const W = 960, rowH = 30, labelW = 250, groupGap = 34, top = 6;
+  const H = top + years.length * (order.length * rowH + groupGap);
+  let y = top, svg = "";
+  years.forEach(yr => {
+    svg += `<text x="0" y="${y + 12}" style="font-weight:600;fill:var(--ink)">Tested on ${yr}</text>`;
+    y += 22;
+    order.forEach(name => {
+      const r = rows.find(x => x.year === yr && x.ranking === name); if (!r) return;
+      const w = (W - labelW - 50) * r.hits / max, isB = name.startsWith("Blindspot");
+      svg += `<text x="${labelW - 10}" y="${y + 15}" text-anchor="end" ${isB ? 'style="fill:var(--ink);font-weight:600"' : ""}>${esc(name)}</text>
+              <rect x="${labelW}" y="${y + 3}" width="${Math.max(w, 2)}" height="${rowH - 10}" rx="3" class="${name === "Blindspot" ? "hl" : "base"}"></rect>
+              <text class="val" x="${labelW + w + 6}" y="${y + 15}">${r.hits}</text>`;
+      y += rowH;
+    });
+    y += groupGap - 22;
+  });
+  $("#chart").innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${y}" width="100%" role="img" aria-label="Exploited vulnerabilities in the top 500 by ranking method and test year">${svg}</svg>`;
+}
+</script>
+</body>
+</html>
