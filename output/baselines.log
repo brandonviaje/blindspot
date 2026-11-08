@@ -1,0 +1,5 @@
+ year  rows  positives  Highest CVSS 3 first  EPSS first  Exploit code first, then EPSS
+ 2024 28839         27                     0           4                              8
+ 2025 35281         48                     5           8                             17
+random top-500 expectation 2024: 0.47
+random top-500 expectation 2025: 0.68

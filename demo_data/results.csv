@@ -1,0 +1,11 @@
+year,ranking,hits
+2024,Highest CVSS 3 first,0
+2024,EPSS first,4
+2024,"Exploit code first, then EPSS",8
+2024,Blindspot,8
+2024,"Blindspot, publish-day info only",8
+2025,Highest CVSS 3 first,5
+2025,EPSS first,8
+2025,"Exploit code first, then EPSS",17
+2025,Blindspot,21
+2025,"Blindspot, publish-day info only",14

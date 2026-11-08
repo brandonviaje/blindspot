@@ -1,0 +1,44 @@
+positives per cohort: {2022: 36, 2023: 22, 2024: 27, 2025: 48}
+format per year = hits@500 / hits@top0.69%
+
+== Full safe model
+  forward  2024:  8/4   2025: 21/18   total (29, 22)
+  loyo     2022: 12/4   2023:  7/5   2024: 10/7   2025: 21/18   total (50, 34)
+
+== Feature removal (loyo, drop one group)
+  (none)       total (50, 34)
+  -assigner    total (50, 33)   change +0 / -1
+  -vendor      total (55, 35)   change +5 / +1
+  -citations   total (51, 33)   change +1 / -1
+  -keywords    total (49, 33)   change -1 / -1
+  -text_model  total (48, 28)   change -2 / -6
+  -granite     total (45, 35)   change -5 / +1
+  -cvss4_cna   total (48, 32)   change -2 / -2
+  -signals     total (38, 25)   change -12 / -9
+
+== Publish-day only (no EPSS / exploit code) — the 'unreviewed, day one' claim
+  loyo     2022: 11/4   2023:  8/6   2024:  5/4   2025: 14/11   total (38, 25)
+
+== Leakage audit: adding the columns the README warns about
+  loyo     2022: 14/8   2023: 11/8   2024: 15/10  2025: 27/23   total (67, 49)   (vs (50, 34) without)
+
+== Final model (trained 2022-2025) -> 2026
+  wrote /home/viajebrandon/dev/datathon/blindspot/top500.csv and output/risk_feed.csv
+  top features: text_score, assigner_kev_rate_12m, assigner_cves_12m, g_kev_top5_sim, any_exploit_code, desc_len, assigner_kev_all, months_to_cutoff, epss, g_knn10_kev
+  top 15:
+ rank         cve_id  predicted_risk_score desc_vendor    epss  any_exploit_code
+    1 CVE-2026-91843              0.855560        None 0.00519               1.0
+    2 CVE-2026-19912              0.791958         php 0.00225               1.0
+    3 CVE-2026-45829              0.772222        None 0.00168               1.0
+    4 CVE-2026-23870              0.771441        None 0.00338               1.0
+    5  CVE-2026-2699              0.749806        None 0.23777               1.0
+    6 CVE-2026-23869              0.746339        None 0.00728               1.0
+    7 CVE-2025-60021              0.739910      apache 0.00231               1.0
+    8  CVE-2026-8508              0.736403       zyxel 0.00700               1.0
+    9 CVE-2025-12420              0.666036  servicenow 0.00038               1.0
+   10 CVE-2026-10523              0.663599      ivanti 0.51870               1.0
+   11  CVE-2026-6875              0.658356  servicenow 0.24489               1.0
+   12  CVE-2026-8065              0.641331        None 0.00577               1.0
+   13  CVE-2026-4092              0.638133      google 0.01031               1.0
+   14  CVE-2026-1603              0.629736      ivanti 0.11742               1.0
+   15  CVE-2026-8037              0.623525    progress 0.84793               1.0

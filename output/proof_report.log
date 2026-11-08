@@ -1,0 +1,18 @@
+== Exploited CVEs in the top 500 (trained only on earlier years)
+year                              2024  2025
+ranking                                     
+Blindspot                            8    21
+Blindspot, publish-day info only     8    14
+EPSS first                           4     8
+Exploit code first, then EPSS        8    17
+Highest CVSS 3 first                 0     5
+
+== NIST review status today, by whether the CVE was exploited
+  2024: unreviewed  4,363 of 28,839 CVEs (15%)   exploited & unreviewed 0 of 27
+  2025: unreviewed 12,359 of 35,281 CVEs (35%)   exploited & unreviewed 0 of 48
+  → every exploited CVE got reviewed, so review status leaks the answer. Blindspot never uses it.
+
+== Our 2026 top 500
+  not yet reviewed by NIST: 205
+  no CVSS 3 score at all:   49  (invisible to 'highest CVSS first')
+  (all 2026 scoreboard: 36,287 of 72,670 unreviewed)
