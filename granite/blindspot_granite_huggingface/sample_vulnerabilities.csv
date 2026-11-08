@@ -1,3 +1,0 @@
-cve_id,description
-CVE-EXAMPLE-0001,An unauthenticated remote attacker can execute code on an ExampleVPN gateway.
-CVE-EXAMPLE-0002,A local user may read restricted files due to improper permissions.
