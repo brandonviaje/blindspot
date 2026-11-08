@@ -1,5 +1,5 @@
 """
-server.py — Blindspot demo UI (Flask + one HTML page). No GPU needed.
+server.py — Blindspot demo UI (Flask + one page: static/index.html, styles/main.css, scripts/app.js). No GPU needed.
 
 Reads only blindspot/demo_data/ (built by src/web/prepare_demo.py).
 

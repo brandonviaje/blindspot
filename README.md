@@ -120,7 +120,7 @@ python src/web/server.py    # then open http://localhost:5000
 src/common.py      paths, key dates, the hits metric
 src/pipeline/      dataset, text model, baselines, model, proof, findings
 src/granite/       Granite embeddings, neighbours, explanations
-src/web/           the demo (server.py, static/index.html) and prepare_demo.py
+src/web/           the demo: server.py, prepare_demo.py, and static/ (index.html, styles/main.css, scripts/app.js)
 demo_data/         everything the demo reads
 output/            logs, results, explanations
 top500.csv         our submission
